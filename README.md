@@ -21,8 +21,8 @@ sample inventory to check the node and partition logic.
 | [`hardening`](roles/hardening) | CIS-inspired and safe for HPC: sshd drop-in, sysctl, auditd rules (identity, sudo, MUNGE and Slurm config), unused filesystems disabled, optional security-only auto updates |
 | [`nfs_server`](roles/nfs_server) / [`nfs_client`](roles/nfs_client) | `/shared/home` (rw) and `/shared/apps` (ro) exported to the cluster network only, `root_squash` on |
 | [`munge`](roles/munge) | Key generated on the controller and copied to the nodes with `no_log`; never stored in git |
-| [`slurm`](roles/slurm) | `slurmctld`, `slurmdbd` on MariaDB (localhost only), `slurmd` in configless mode, cgroup v2 isolation, accounts and users in `sacctmgr` |
-| [`nvidia_gpu`](roles/nvidia_gpu) | NVIDIA driver from the official CUDA repo, persistence daemon, reboot only when `nouveau` is loaded, `slurmd` ordered after the GPU devices |
+| [`slurm`](roles/slurm) | `slurmctld`, `slurmdbd` on MariaDB (localhost only), `slurmd` in configless mode, cgroup v2 isolation, accounts and users in `sacctmgr`, and a **node health check** (`HealthCheckProgram`) that drains a node whose shared mounts, MUNGE or GPUs fail (ECC errors, row remapping, critical XIDs) and resumes it when they recover |
+| [`nvidia_gpu`](roles/nvidia_gpu) | NVIDIA driver from the official CUDA repo, persistence daemon, reboot only when `nouveau` is loaded, `slurmd` ordered after the GPU devices, **DCGM** matched to the driver's CUDA version with a `dcgmi diag` gate before the node takes jobs |
 | [`lmod`](roles/lmod) | Lmod with a shared modulefiles tree on `/shared/apps/modulefiles` |
 | [`xcat_mgmt`](roles/xcat_mgmt) | xCAT management node: repos, site and network tables, OS image from ISO (`copycds`), node definitions, DNS/DHCP, genesis kernel, `nodeset` |
 
@@ -128,7 +128,7 @@ this repository where SELinux is relaxed, and it is controlled by `xcat_mgmt_sel
 | `yamllint` | YAML style |
 | `ansible-lint --profile production` | FQCN, idempotency (`changed_when`), file modes, naming, no free-form commands |
 | `ansible-playbook --syntax-check` | Both playbooks |
-| `tests/render-slurm-conf.yml` | Renders `slurm.conf` and `gres.conf` from a sample inventory and asserts on node, GPU and partition lines |
+| `tests/render-slurm-conf.yml` | Renders `slurm.conf` and `gres.conf` from a sample inventory and asserts on node, GPU, partition and health check lines |
 | `gitleaks` | Secrets in the git history |
 
 ## Related projects

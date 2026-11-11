@@ -30,6 +30,26 @@
   when: not slurm_configless
   notify: Restart slurmd
 
+- name: Install the node health check run by slurmd
+  ansible.builtin.copy:
+    src: node-healthcheck.sh
+    dest: /usr/local/sbin/node-healthcheck
+    owner: root
+    group: root
+    mode: "0755"
+  when: slurm_health_check
+
+- name: Tell the health check which shared file systems to watch
+  ansible.builtin.copy:
+    content: |
+      # {{ ansible_managed }}
+      HEALTHCHECK_MOUNTS="{{ slurm_health_check_mounts | join(' ') }}"
+    dest: /etc/sysconfig/node-healthcheck
+    owner: root
+    group: root
+    mode: "0644"
+  when: slurm_health_check
+
 - name: Enable slurmd
   ansible.builtin.systemd_service:
     name: slurmd

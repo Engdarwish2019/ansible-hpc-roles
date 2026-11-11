@@ -32,6 +32,9 @@
           - "'PartitionName=compute Nodes=compute-01 Default=YES' in slurm_conf"
           - "'PartitionName=gpu Nodes=gpu-01 Default=NO' in slurm_conf"
           - "'GresTypes=gpu' in slurm_conf"
+          - "'HealthCheckProgram=/usr/local/sbin/node-healthcheck' in slurm_conf"
+          - "'HealthCheckInterval=300' in slurm_conf"
+          - "'HealthCheckNodeState=ANY,CYCLE' in slurm_conf"
         quiet: true
       vars:
         slurm_conf: "{{ lookup('ansible.builtin.file', slurm_test_dir ~ '/slurm.conf') }}"

@@ -75,3 +75,40 @@
 - name: Show detected GPUs
   ansible.builtin.debug:
     var: nvidia_gpu_smi.stdout_lines
+
+- name: Read the CUDA version the driver supports
+  ansible.builtin.command:
+    cmd: nvidia-smi -q
+  register: nvidia_gpu_smi_query
+  changed_when: false
+  when: nvidia_gpu_dcgm
+
+- name: Install DCGM built for that CUDA major version
+  ansible.builtin.dnf:
+    name: "datacenter-gpu-manager-4-cuda{{ nvidia_gpu_cuda_major }}"
+    state: present
+    install_weak_deps: true
+  vars:
+    nvidia_gpu_cuda_major: "{{ nvidia_gpu_smi_query.stdout | regex_search('CUDA Version\\s*:\\s*([0-9]+)', '\\1') | first }}"
+  when: nvidia_gpu_dcgm
+
+- name: Start the DCGM host engine
+  ansible.builtin.systemd_service:
+    name: nvidia-dcgm
+    state: started
+    enabled: true
+  when: nvidia_gpu_dcgm
+
+- name: Run a DCGM diagnostic before the node takes jobs
+  ansible.builtin.command:
+    cmd: "dcgmi diag -r {{ nvidia_gpu_dcgm_diag_level }}"
+  register: nvidia_gpu_dcgm_diag
+  changed_when: false
+  when:
+    - nvidia_gpu_dcgm
+    - nvidia_gpu_dcgm_diag_level | int > 0
+
+- name: Show the diagnostic result
+  ansible.builtin.debug:
+    var: nvidia_gpu_dcgm_diag.stdout_lines
+  when: nvidia_gpu_dcgm_diag.stdout_lines is defined

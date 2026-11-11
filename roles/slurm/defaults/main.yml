@@ -29,3 +29,11 @@ slurm_db_innodb_buffer_pool_size: 512M
 slurm_accounts_list: "{{ slurm_accounts | default([]) }}"
 
 slurm_extra_config: {}
+
+# Node health check run by slurmd: drains a node whose shared mounts, MUNGE or GPUs fail and
+# resumes it once they recover. The mounts default to the nfs_client layout of this repo.
+slurm_health_check: true
+slurm_health_check_interval: 300
+slurm_health_check_mounts:
+  - /shared/home
+  - /shared/apps

@@ -26,6 +26,14 @@ DefMemPerCPU={{ slurm_def_mem_per_cpu }}
 ProctrackType=proctrack/cgroup
 TaskPlugin=task/cgroup,task/affinity
 ReturnToService=2
+{% if slurm_health_check %}
+
+# Node health check: slurmd runs it on every node, cycling through them, and the script drains
+# a node whose shared mounts, MUNGE or GPUs fail (roles/slurm/files/node-healthcheck.sh).
+HealthCheckProgram=/usr/local/sbin/node-healthcheck
+HealthCheckInterval={{ slurm_health_check_interval }}
+HealthCheckNodeState=ANY,CYCLE
+{% endif %}
 
 {% if slurm_accounting %}
 AccountingStorageType=accounting_storage/slurmdbd

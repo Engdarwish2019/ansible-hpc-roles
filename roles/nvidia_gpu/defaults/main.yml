@@ -3,3 +3,10 @@ nvidia_gpu_repo_url: https://developer.download.nvidia.com/compute/cuda/repos/rh
 nvidia_gpu_driver_package: cuda-drivers
 nvidia_gpu_allow_reboot: true
 nvidia_gpu_count: 1
+
+# NVIDIA DCGM: GPU health monitoring and diagnostics (dcgm-exporter in slurm-observability
+# reads from it). The package matches the CUDA major version the installed driver supports.
+nvidia_gpu_dcgm: true
+# DCGM diagnostic run as a bring-up gate before the node takes jobs:
+# 1 = quick (seconds), 2 = medium (a few minutes), 3 = long; 0 skips it.
+nvidia_gpu_dcgm_diag_level: 1
