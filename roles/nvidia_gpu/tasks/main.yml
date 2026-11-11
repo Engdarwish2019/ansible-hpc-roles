@@ -1,0 +1,77 @@
+---
+- name: Install kernel headers and DKMS for the running kernel
+  ansible.builtin.dnf:
+    name:
+      - "kernel-devel-{{ ansible_kernel }}"
+      - "kernel-headers-{{ ansible_kernel }}"
+      - dkms
+    state: present
+
+- name: Add the NVIDIA CUDA repository
+  ansible.builtin.get_url:
+    url: "{{ nvidia_gpu_repo_url }}"
+    dest: /etc/yum.repos.d/cuda-rhel9.repo
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the NVIDIA driver
+  ansible.builtin.dnf:
+    name: "{{ nvidia_gpu_driver_package }}"
+    state: present
+  register: nvidia_gpu_driver
+
+- name: Enable the NVIDIA persistence daemon
+  ansible.builtin.systemd_service:
+    name: nvidia-persistenced
+    enabled: true
+
+- name: Create the slurmd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/slurmd.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Start slurmd only after the GPU devices exist
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/slurmd.service.d/10-nvidia.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # {{ ansible_managed }}
+      [Unit]
+      After=nvidia-persistenced.service
+      Wants=nvidia-persistenced.service
+
+- name: Check whether nouveau is still loaded
+  ansible.builtin.command:
+    cmd: grep -q '^nouveau ' /proc/modules
+  register: nvidia_gpu_nouveau
+  changed_when: false
+  failed_when: false
+
+- name: Reboot to replace nouveau with the NVIDIA driver
+  ansible.builtin.reboot:
+    reboot_timeout: 900
+  when:
+    - nvidia_gpu_nouveau.rc == 0
+    - nvidia_gpu_allow_reboot
+
+- name: Start the persistence daemon
+  ansible.builtin.systemd_service:
+    name: nvidia-persistenced
+    state: started
+    daemon_reload: true
+
+- name: Verify the GPUs are visible
+  ansible.builtin.command:
+    cmd: nvidia-smi --query-gpu=name,driver_version --format=csv,noheader
+  register: nvidia_gpu_smi
+  changed_when: false
+
+- name: Show detected GPUs
+  ansible.builtin.debug:
+    var: nvidia_gpu_smi.stdout_lines

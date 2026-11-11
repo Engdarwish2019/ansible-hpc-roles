@@ -1,0 +1,32 @@
+---
+- name: Check the installation ISO
+  ansible.builtin.stat:
+    path: "{{ xcat_mgmt_iso_path }}"
+  register: xcat_mgmt_iso
+
+- name: Fail early when the ISO is missing
+  ansible.builtin.assert:
+    that: xcat_mgmt_iso.stat.exists
+    fail_msg: "Copy the OS ISO to {{ xcat_mgmt_iso_path }} on the management node first."
+
+- name: Populate the install tree with copycds
+  ansible.builtin.command:
+    cmd: >-
+      copycds -n {{ xcat_mgmt_os_name }} -a {{ xcat_mgmt_os_arch }}
+      -p {{ xcat_mgmt_installdir }}/{{ xcat_mgmt_os_name }}/{{ xcat_mgmt_os_arch }}
+      {{ xcat_mgmt_iso_path }}
+    creates: "{{ xcat_mgmt_installdir }}/{{ xcat_mgmt_os_name }}/{{ xcat_mgmt_os_arch }}/repodata"
+  environment: "{{ xcat_mgmt_env }}"
+
+- name: Define the stateful OS image
+  ansible.builtin.command:
+    cmd: >-
+      mkdef -t osimage {{ xcat_mgmt_osimage }}
+      profile={{ xcat_mgmt_os_profile }} osname=Linux osvers={{ xcat_mgmt_os_name }}
+      osarch={{ xcat_mgmt_os_arch }} provmethod=install
+  environment: "{{ xcat_mgmt_env }}"
+  register: xcat_mgmt_mkdef
+  changed_when: xcat_mgmt_mkdef.rc == 0
+  failed_when:
+    - xcat_mgmt_mkdef.rc != 0
+    - "'already exists' not in xcat_mgmt_mkdef.stderr"

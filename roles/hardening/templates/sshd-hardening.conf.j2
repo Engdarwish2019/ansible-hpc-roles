@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+PermitRootLogin {{ hardening_sshd_permit_root_login }}
+PasswordAuthentication {{ hardening_sshd_password_authentication }}
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+MaxAuthTries {{ hardening_sshd_max_auth_tries }}
+ClientAliveInterval {{ hardening_sshd_client_alive_interval }}
+ClientAliveCountMax 3
+X11Forwarding {{ hardening_sshd_x11_forwarding }}
+Banner /etc/issue.net
+LogLevel VERBOSE

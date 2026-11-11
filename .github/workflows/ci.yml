@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: yamllint / ansible-lint / syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install tools
+        run: pip install -r requirements-dev.txt
+
+      - name: yamllint
+        run: yamllint .
+
+      - name: ansible-lint (production profile)
+        run: ansible-lint
+
+      - name: Syntax check playbooks
+        run: |
+          ansible-playbook playbooks/site.yml --syntax-check
+          ansible-playbook -i inventories/lab/xcat.example.yml playbooks/xcat.yml --syntax-check
+
+      - name: Render slurm.conf from a sample inventory
+        run: ansible-playbook -i tests/inventory.yml tests/render-slurm-conf.yml
+
+  secrets:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

@@ -1,0 +1,32 @@
+---
+xcat_mgmt_ip: 10.0.200.1
+xcat_mgmt_cluster_interface: eth1
+xcat_mgmt_configure_interface: true
+xcat_mgmt_network: 10.0.200.0
+xcat_mgmt_netmask: 255.255.255.0
+xcat_mgmt_prefix: 24
+xcat_mgmt_domain: "{{ cluster_domain | default('cluster.local') }}"
+xcat_mgmt_forwarders: 1.1.1.1
+xcat_mgmt_timezone: UTC
+xcat_mgmt_installdir: /install
+xcat_mgmt_tftpdir: /tftpboot
+
+xcat_mgmt_core_repo_url: https://xcat.org/files/xcat/repos/yum/latest/xcat-core/xcat-core.repo
+xcat_mgmt_dep_repo_url: https://xcat.org/files/xcat/repos/yum/latest/xcat-dep/rh9/x86_64/xcat-dep.repo
+
+# OS image built from a local ISO with copycds
+xcat_mgmt_iso_path: /var/tmp/rocky9.iso
+xcat_mgmt_os_name: rocky9.4
+xcat_mgmt_os_arch: x86_64
+xcat_mgmt_os_profile: compute
+
+# Nodes to define. Each item: name, mac, ip, optional groups.
+xcat_mgmt_nodes: []
+xcat_mgmt_provision_nodes: false
+
+# xCAT's makedns does not fully support SELinux enforcing. Kept as an explicit opt-in.
+xcat_mgmt_selinux_permissive: true
+
+# Some EL9 + xCAT combinations need OpenSSL SECLEVEL=1 for xcatd TLS.
+# This weakens TLS for the whole host, so it is off unless you hit that error.
+xcat_mgmt_openssl_seclevel1: false

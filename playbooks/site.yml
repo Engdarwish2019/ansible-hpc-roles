@@ -1,0 +1,48 @@
+---
+- name: Gather facts from every node (slurm.conf is built from them)
+  hosts: all
+  gather_facts: true
+  tasks: []
+
+- name: Base OS and hardening
+  hosts: all
+  become: true
+  roles:
+    - common
+    - hardening
+
+- name: Shared storage server
+  hosts: nfs_server
+  become: true
+  roles:
+    - nfs_server
+
+- name: Shared storage clients
+  hosts: all:!nfs_server
+  become: true
+  roles:
+    - nfs_client
+
+- name: MUNGE authentication
+  hosts: slurm_controller:slurm_compute
+  become: true
+  roles:
+    - munge
+
+- name: NVIDIA drivers on GPU nodes
+  hosts: slurm_gpu
+  become: true
+  roles:
+    - nvidia_gpu
+
+- name: Slurm controller, accounting and compute nodes
+  hosts: slurm_controller:slurm_compute
+  become: true
+  roles:
+    - slurm
+
+- name: Lmod environment modules
+  hosts: all
+  become: true
+  roles:
+    - lmod

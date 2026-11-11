@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+if [ -d "{{ lmod_modulefiles_path }}" ]; then
+  export MODULEPATH="{{ lmod_modulefiles_path }}${MODULEPATH:+:$MODULEPATH}"
+fi

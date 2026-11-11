@@ -1,0 +1,65 @@
+---
+- name: Validate inputs
+  ansible.builtin.assert:
+    that:
+      - not slurm_accounting or (slurm_db_password | length) >= 16
+    fail_msg: >-
+      slurm_db_password must be at least 16 characters. Put it in an
+      ansible-vault encrypted file (see inventories/lab/group_vars/all/vault.yml.example).
+    quiet: true
+  when: slurm_is_controller
+
+- name: Create the slurm group with a fixed GID
+  ansible.builtin.group:
+    name: slurm
+    gid: "{{ slurm_uid }}"
+    system: true
+
+- name: Create the slurm user with a fixed UID (must match on every node)
+  ansible.builtin.user:
+    name: slurm
+    uid: "{{ slurm_uid }}"
+    group: slurm
+    home: /var/lib/slurm
+    shell: /sbin/nologin
+    system: true
+    create_home: false
+    comment: Slurm workload manager
+
+- name: Install Slurm client packages
+  ansible.builtin.dnf:
+    name: slurm
+    state: present
+
+- name: Create Slurm directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: slurm
+    group: slurm
+    mode: "0755"
+  loop:
+    - /etc/slurm
+    - /var/log/slurm
+    - /var/spool/slurmd
+    - /var/spool/slurmctld
+
+- name: Keep /run/slurm across reboots
+  ansible.builtin.copy:
+    content: "d /run/slurm 0755 slurm slurm -\n"
+    dest: /etc/tmpfiles.d/slurm.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Create tmpfiles
+
+- name: Flush handlers so /run/slurm exists
+  ansible.builtin.meta: flush_handlers
+
+- name: Configure the controller
+  ansible.builtin.include_tasks: controller.yml
+  when: slurm_is_controller
+
+- name: Configure compute nodes
+  ansible.builtin.include_tasks: compute.yml
+  when: slurm_is_compute

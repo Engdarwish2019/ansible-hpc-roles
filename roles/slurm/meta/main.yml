@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: slurm
+  author: Ahmed Darwish
+  description: "Slurm controller, slurmdbd accounting on MariaDB and compute nodes, configless by default"
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+dependencies: []

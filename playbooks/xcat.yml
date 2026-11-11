@@ -1,0 +1,6 @@
+---
+- name: Configure the xCAT management node for bare-metal provisioning
+  hosts: xcat_mgmt
+  become: true
+  roles:
+    - xcat_mgmt

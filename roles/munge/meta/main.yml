@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: munge
+  author: Ahmed Darwish
+  description: "MUNGE authentication with a key generated on the controller and distributed without touching git"
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+dependencies: []

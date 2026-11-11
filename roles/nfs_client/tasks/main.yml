@@ -1,0 +1,22 @@
+---
+- name: Install NFS client packages
+  ansible.builtin.dnf:
+    name: nfs-utils
+    state: present
+
+- name: Mount shared file systems
+  ansible.posix.mount:
+    path: "{{ item.path }}"
+    src: "{{ nfs_client_server }}:{{ item.src }}"
+    fstype: nfs4
+    opts: "{{ item.opts }}"
+    state: mounted
+  loop: "{{ nfs_client_mounts }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Allow NFS home directories under SELinux
+  ansible.posix.seboolean:
+    name: use_nfs_home_dirs
+    state: true
+    persistent: true

@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+{% for host in groups['slurm_gpu'] | default([]) %}
+{% set gpus = hostvars[host].nvidia_gpu_count | default(1) | int %}
+NodeName={{ host }} Name=gpu File={{ '/dev/nvidia0' if gpus == 1 else '/dev/nvidia[0-' ~ (gpus - 1) ~ ']' }}
+{% endfor %}

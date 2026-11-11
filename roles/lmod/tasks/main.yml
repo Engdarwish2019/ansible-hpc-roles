@@ -1,0 +1,32 @@
+---
+- name: Install Lmod
+  ansible.builtin.dnf:
+    name: Lmod
+    state: present
+
+- name: Add the shared modulefiles tree to MODULEPATH
+  ansible.builtin.template:
+    src: z01-hpc-modulepath.sh.j2
+    dest: /etc/profile.d/z01-hpc-modulepath.sh
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Create the shared modulefiles tree and an example module
+  when: lmod_manage_modulefiles
+  block:
+    - name: Create the modulefiles directory
+      ansible.builtin.file:
+        path: "{{ lmod_modulefiles_path }}/hello"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install the example modulefile
+      ansible.builtin.template:
+        src: hello-1.0.lua.j2
+        dest: "{{ lmod_modulefiles_path }}/hello/1.0.lua"
+        owner: root
+        group: root
+        mode: "0644"

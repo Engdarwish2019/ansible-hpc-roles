@@ -1,0 +1,31 @@
+---
+slurm_cluster_name: "{{ cluster_name | default('hpc') }}"
+slurm_controller_host: "{{ groups['slurm_controller'][0] }}"
+slurm_is_controller: "{{ inventory_hostname in groups['slurm_controller'] }}"
+slurm_is_compute: "{{ inventory_hostname in groups['slurm_compute'] | default([]) }}"
+
+slurm_uid: 450
+slurm_configless: true
+slurm_real_memory_ratio: 0.9
+slurm_def_mem_per_cpu: 1024
+slurm_srun_port_range: "60001-63000"
+
+slurm_partitions:
+  - name: compute
+    group: slurm_cpu
+    default: true
+    max_time: "7-00:00:00"
+  - name: gpu
+    group: slurm_gpu
+    default: false
+    max_time: "2-00:00:00"
+
+# Accounting (slurmdbd + MariaDB on the controller)
+slurm_accounting: true
+slurm_db_name: slurm_acct_db
+slurm_db_user: slurm
+slurm_db_password: ""
+slurm_db_innodb_buffer_pool_size: 512M
+slurm_accounts_list: "{{ slurm_accounts | default([]) }}"
+
+slurm_extra_config: {}

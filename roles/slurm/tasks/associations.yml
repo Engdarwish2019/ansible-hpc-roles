@@ -1,0 +1,30 @@
+---
+- name: Register the cluster
+  ansible.builtin.command:
+    cmd: sacctmgr -i add cluster {{ slurm_cluster_name }}
+  register: slurm_add_cluster
+  changed_when: "'Nothing new added' not in slurm_add_cluster.stdout"
+  failed_when:
+    - slurm_add_cluster.rc != 0
+    - "'already exists' not in slurm_add_cluster.stderr"
+
+- name: Create accounts
+  ansible.builtin.command:
+    cmd: >-
+      sacctmgr -i add account {{ item.name }}
+      Description="{{ item.description | default(item.name) }}"
+      Organization={{ item.organization | default(slurm_cluster_name) }}
+  loop: "{{ slurm_accounts_list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: slurm_add_account
+  changed_when: "'Nothing new added' not in slurm_add_account.stdout"
+
+- name: Add users to their accounts
+  ansible.builtin.command:
+    cmd: sacctmgr -i add user {{ item.1 }} Account={{ item.0.name }} DefaultAccount={{ item.0.name }}
+  loop: "{{ slurm_accounts_list | subelements('users', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.1 }} -> {{ item.0.name }}"
+  register: slurm_add_user
+  changed_when: "'Nothing new added' not in slurm_add_user.stdout"

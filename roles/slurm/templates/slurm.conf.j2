@@ -1,0 +1,54 @@
+# {{ ansible_managed }}
+ClusterName={{ slurm_cluster_name }}
+SlurmctldHost={{ slurm_controller_host }}
+{% if slurm_configless %}
+SlurmctldParameters=enable_configless
+{% endif %}
+
+AuthType=auth/munge
+CredType=cred/munge
+SlurmUser=slurm
+SlurmctldPort=6817
+SlurmdPort=6818
+SrunPortRange={{ slurm_srun_port_range }}
+
+StateSaveLocation=/var/spool/slurmctld
+SlurmdSpoolDir=/var/spool/slurmd
+SlurmctldPidFile=/run/slurm/slurmctld.pid
+SlurmdPidFile=/run/slurm/slurmd.pid
+SlurmctldLogFile=/var/log/slurm/slurmctld.log
+SlurmdLogFile=/var/log/slurm/slurmd.log
+
+SchedulerType=sched/backfill
+SelectType=select/cons_tres
+SelectTypeParameters=CR_Core_Memory
+DefMemPerCPU={{ slurm_def_mem_per_cpu }}
+ProctrackType=proctrack/cgroup
+TaskPlugin=task/cgroup,task/affinity
+ReturnToService=2
+
+{% if slurm_accounting %}
+AccountingStorageType=accounting_storage/slurmdbd
+AccountingStorageHost={{ slurm_controller_host }}
+AccountingStorageEnforce=associations,limits
+{% endif %}
+JobAcctGatherType=jobacct_gather/cgroup
+JobAcctGatherFrequency=30
+{% if groups['slurm_gpu'] | default([]) | length > 0 %}
+GresTypes=gpu
+AccountingStorageTRES=gres/gpu
+{% endif %}
+{% for key, value in slurm_extra_config.items() %}
+{{ key }}={{ value }}
+{% endfor %}
+
+# Nodes (built from Ansible facts)
+{% for host in groups['slurm_compute'] | default([]) %}
+{% set h = hostvars[host] %}
+NodeName={{ host }} NodeAddr={{ h.ansible_host | default(h.ansible_default_ipv4.address) }} Sockets={{ h.ansible_processor_count }} CoresPerSocket={{ h.ansible_processor_cores }} ThreadsPerCore={{ h.ansible_processor_threads_per_core }} RealMemory={{ (h.ansible_memtotal_mb * slurm_real_memory_ratio) | int }}{% if host in groups['slurm_gpu'] | default([]) %} Gres=gpu:{{ h.nvidia_gpu_count | default(1) }}{% endif %} State=UNKNOWN
+{% endfor %}
+
+# Partitions
+{% for p in slurm_partitions if groups[p.group] | default([]) | length > 0 %}
+PartitionName={{ p.name }} Nodes={{ groups[p.group] | join(',') }} Default={{ 'YES' if p.default | default(false) else 'NO' }} MaxTime={{ p.max_time | default('INFINITE') }} State=UP
+{% endfor %}

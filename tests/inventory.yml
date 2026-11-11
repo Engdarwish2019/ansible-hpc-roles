@@ -1,0 +1,31 @@
+---
+# Fake hosts with pre-set facts, used to render and check the Slurm templates in CI.
+all:
+  vars:
+    ansible_connection: local
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    cluster_name: ci-cluster
+  children:
+    slurm_controller:
+      hosts:
+        head:
+          ansible_host: 10.0.0.10
+    slurm_compute:
+      children:
+        slurm_cpu:
+          hosts:
+            compute-01:
+              ansible_host: 10.0.0.11
+              ansible_processor_count: 2
+              ansible_processor_cores: 16
+              ansible_processor_threads_per_core: 2
+              ansible_memtotal_mb: 257000
+        slurm_gpu:
+          hosts:
+            gpu-01:
+              ansible_host: 10.0.0.21
+              ansible_processor_count: 1
+              ansible_processor_cores: 32
+              ansible_processor_threads_per_core: 2
+              ansible_memtotal_mb: 515000
+              nvidia_gpu_count: 4

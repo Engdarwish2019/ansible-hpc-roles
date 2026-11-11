@@ -1,0 +1,86 @@
+---
+- name: Set the management node FQDN (required by makedns)
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}.{{ xcat_mgmt_domain }}"
+
+- name: Resolve the management node FQDN locally
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ xcat_mgmt_ip }} {{ inventory_hostname }}.{{ xcat_mgmt_domain }} {{ inventory_hostname }}"
+    state: present
+
+- name: Set SELinux to permissive (xCAT limitation, see defaults)
+  ansible.posix.selinux:
+    policy: targeted
+    state: permissive
+  when: xcat_mgmt_selinux_permissive
+
+- name: Enable CRB and EPEL
+  block:
+    - name: Install EPEL
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+
+    - name: Enable CRB
+      community.general.dnf_config_manager:
+        name: crb
+        state: enabled
+
+- name: Add the official xCAT repositories
+  ansible.builtin.get_url:
+    url: "{{ item.url }}"
+    dest: /etc/yum.repos.d/{{ item.file }}
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - url: "{{ xcat_mgmt_core_repo_url }}"
+      file: xcat-core.repo
+    - url: "{{ xcat_mgmt_dep_repo_url }}"
+      file: xcat-dep.repo
+
+- name: Install xCAT and its services
+  ansible.builtin.dnf:
+    name:
+      - xCAT
+      - xCAT-server
+      - xCAT-client
+      - xCAT-genesis-base-x86_64
+      - dhcp-server
+      - tftp-server
+      - bind
+      - bind-utils
+      - nfs-utils
+      - syslinux
+    state: present
+
+- name: Lower OpenSSL security level for xcatd TLS (opt-in)
+  ansible.builtin.blockinfile:
+    path: /etc/pki/tls/openssl.cnf
+    marker: "# {mark} ANSIBLE MANAGED: xCAT TLS compatibility"
+    insertafter: '^\[openssl_init\]'
+    block: |
+      ssl_conf = ssl_sect
+
+      [ssl_sect]
+      system_default = system_default_sect
+
+      [system_default_sect]
+      MinProtocol = TLSv1.2
+      CipherString = DEFAULT@SECLEVEL=1
+  when: xcat_mgmt_openssl_seclevel1
+
+- name: Enable xcatd
+  ansible.builtin.systemd_service:
+    name: xcatd
+    state: started
+    enabled: true
+
+- name: Create a root SSH key for genesis and node access
+  community.crypto.openssh_keypair:
+    path: /root/.ssh/id_ed25519
+    type: ed25519
+    owner: root
+    group: root
+    mode: "0600"

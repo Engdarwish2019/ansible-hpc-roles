@@ -1,0 +1,41 @@
+---
+- name: Give the cluster interface a static address
+  community.general.nmcli:
+    conn_name: cluster
+    ifname: "{{ xcat_mgmt_cluster_interface }}"
+    type: ethernet
+    ip4: "{{ xcat_mgmt_ip }}/{{ xcat_mgmt_prefix }}"
+    autoconnect: true
+    state: present
+  when: xcat_mgmt_configure_interface
+
+- name: Set the xCAT site table
+  ansible.builtin.command:
+    cmd: >-
+      chdef -t site
+      master={{ xcat_mgmt_ip }}
+      domain={{ xcat_mgmt_domain }}
+      nameservers={{ xcat_mgmt_ip }}
+      forwarders={{ xcat_mgmt_forwarders }}
+      dhcpinterfaces={{ xcat_mgmt_cluster_interface }}
+      installdir={{ xcat_mgmt_installdir }}
+      tftpdir={{ xcat_mgmt_tftpdir }}
+      timezone={{ xcat_mgmt_timezone }}
+  environment: "{{ xcat_mgmt_env }}"
+  register: xcat_mgmt_site
+  changed_when: "'have been created or modified' in xcat_mgmt_site.stdout"
+
+- name: Define the provisioning network
+  ansible.builtin.command:
+    cmd: >-
+      chdef -t network {{ xcat_mgmt_network | replace('.', '_') }}-{{ xcat_mgmt_netmask | replace('.', '_') }}
+      net={{ xcat_mgmt_network }}
+      mask={{ xcat_mgmt_netmask }}
+      gateway={{ xcat_mgmt_ip }}
+      tftpserver={{ xcat_mgmt_ip }}
+      nameservers={{ xcat_mgmt_ip }}
+      dhcpserver={{ xcat_mgmt_ip }}
+      domain={{ xcat_mgmt_domain }}
+  environment: "{{ xcat_mgmt_env }}"
+  register: xcat_mgmt_net
+  changed_when: "'have been created or modified' in xcat_mgmt_net.stdout"

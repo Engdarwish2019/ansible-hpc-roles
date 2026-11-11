@@ -1,0 +1,40 @@
+---
+- name: Install controller packages
+  ansible.builtin.dnf:
+    name: "{{ ['slurm-slurmctld'] + (['slurm-slurmdbd', 'mariadb-server', 'python3-PyMySQL'] if slurm_accounting else []) }}"
+    state: present
+
+- name: Render slurm.conf, cgroup.conf and gres.conf
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: /etc/slurm/{{ item }}
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - slurm.conf
+    - cgroup.conf
+    - gres.conf
+  notify: Restart slurmctld
+
+- name: Set up accounting
+  ansible.builtin.include_tasks: accounting.yml
+  when: slurm_accounting
+
+- name: Enable slurmctld
+  ansible.builtin.systemd_service:
+    name: slurmctld
+    state: started
+    enabled: true
+
+- name: Flush handlers so compute nodes see the current configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for slurmctld to accept connections
+  ansible.builtin.wait_for:
+    port: 6817
+    timeout: 60
+
+- name: Create accounts and users in the accounting database
+  ansible.builtin.include_tasks: associations.yml
+  when: slurm_accounting

@@ -1,0 +1,13 @@
+---
+- name: Install and start xCAT
+  ansible.builtin.include_tasks: install.yml
+
+- name: Configure the site and network tables
+  ansible.builtin.include_tasks: network.yml
+
+- name: Build the OS image from the ISO
+  ansible.builtin.include_tasks: osimage.yml
+
+- name: Define nodes, DNS and DHCP
+  ansible.builtin.include_tasks: nodes.yml
+  when: xcat_mgmt_nodes | length > 0

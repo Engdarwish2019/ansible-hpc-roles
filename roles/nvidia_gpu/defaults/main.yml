@@ -1,0 +1,5 @@
+---
+nvidia_gpu_repo_url: https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo
+nvidia_gpu_driver_package: cuda-drivers
+nvidia_gpu_allow_reboot: true
+nvidia_gpu_count: 1

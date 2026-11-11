@@ -1,0 +1,7 @@
+.vagrant/
+*.retry
+inventories/*/group_vars/all/vault.yml
+.vault-pass*
+*.iso
+__pycache__/
+tests/.rendered/

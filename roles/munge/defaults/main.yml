@@ -1,0 +1,3 @@
+---
+munge_key_host: "{{ groups['slurm_controller'][0] }}"
+munge_key_path: /etc/munge/munge.key

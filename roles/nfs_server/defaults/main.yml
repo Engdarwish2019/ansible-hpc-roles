@@ -1,0 +1,9 @@
+---
+nfs_server_clients: "{{ cluster_network | default('127.0.0.1/32') }}"
+nfs_server_exports:
+  - path: /shared/home
+    options: rw,sync,no_subtree_check,root_squash
+  - path: /shared/apps
+    options: ro,sync,no_subtree_check,root_squash
+nfs_server_home_base: /shared/home
+nfs_server_home_users: "{{ cluster_users | default([]) }}"

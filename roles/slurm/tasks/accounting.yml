@@ -1,0 +1,55 @@
+---
+- name: Configure MariaDB for slurmdbd (localhost only)
+  ansible.builtin.template:
+    src: slurm-mariadb.cnf.j2
+    dest: /etc/my.cnf.d/slurm.cnf
+    owner: root
+    group: root
+    mode: "0644"
+  register: slurm_mariadb_config
+
+- name: Enable MariaDB
+  ansible.builtin.systemd_service:
+    name: mariadb
+    state: "{{ 'restarted' if slurm_mariadb_config.changed else 'started' }}"
+    enabled: true
+
+- name: Create the accounting database
+  community.mysql.mysql_db:
+    name: "{{ slurm_db_name }}"
+    state: present
+    login_unix_socket: /var/lib/mysql/mysql.sock
+
+- name: Create the slurmdbd database user
+  community.mysql.mysql_user:
+    name: "{{ slurm_db_user }}"
+    host: localhost
+    password: "{{ slurm_db_password }}"
+    priv: "{{ slurm_db_name }}.*:ALL"
+    state: present
+    login_unix_socket: /var/lib/mysql/mysql.sock
+  no_log: true
+
+- name: Render slurmdbd.conf (contains the DB password, mode 0600)
+  ansible.builtin.template:
+    src: slurmdbd.conf.j2
+    dest: /etc/slurm/slurmdbd.conf
+    owner: slurm
+    group: slurm
+    mode: "0600"
+  diff: false
+  notify: Restart slurmdbd
+
+- name: Enable slurmdbd
+  ansible.builtin.systemd_service:
+    name: slurmdbd
+    state: started
+    enabled: true
+
+- name: Flush handlers so slurmdbd runs with the current configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for slurmdbd
+  ansible.builtin.wait_for:
+    port: 6819
+    timeout: 60

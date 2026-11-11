@@ -1,0 +1,39 @@
+---
+- name: Define compute nodes
+  ansible.builtin.command:
+    cmd: >-
+      chdef -t node {{ item.name }}
+      groups={{ item.groups | default('compute,all') }}
+      arch={{ xcat_mgmt_os_arch }} os={{ xcat_mgmt_os_name }} profile={{ xcat_mgmt_os_profile }}
+      mac={{ item.mac }} ip={{ item.ip }}
+      netboot=xnba installnic=mac primarynic=mac provmethod=install
+  environment: "{{ xcat_mgmt_env }}"
+  loop: "{{ xcat_mgmt_nodes }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: xcat_mgmt_node_defs
+  changed_when: "'have been created or modified' in xcat_mgmt_node_defs.stdout"
+
+- name: Generate hosts, DNS and DHCP entries
+  ansible.builtin.command:
+    cmd: "{{ item }}"
+  environment: "{{ xcat_mgmt_env }}"
+  loop:
+    - makehosts
+    - makedns -n
+    - makedhcp -n
+    - makedhcp -a
+  changed_when: true
+
+- name: Build the genesis network boot kernel
+  ansible.builtin.command:
+    cmd: mknb {{ xcat_mgmt_os_arch }}
+  environment: "{{ xcat_mgmt_env }}"
+  changed_when: true
+
+- name: Set nodes to install the OS image on next boot
+  ansible.builtin.command:
+    cmd: nodeset {{ xcat_mgmt_nodes | map(attribute='name') | join(',') }} osimage={{ xcat_mgmt_osimage }}
+  environment: "{{ xcat_mgmt_env }}"
+  changed_when: true
+  when: xcat_mgmt_provision_nodes

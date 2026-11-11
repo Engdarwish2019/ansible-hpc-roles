@@ -1,0 +1,31 @@
+---
+hardening_sshd_permit_root_login: "no"
+hardening_sshd_password_authentication: "no"
+hardening_sshd_max_auth_tries: 4
+hardening_sshd_client_alive_interval: 300
+hardening_sshd_x11_forwarding: "no"
+
+hardening_sysctl:
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.tcp_syncookies: 1
+  kernel.randomize_va_space: 2
+  kernel.dmesg_restrict: 1
+  fs.suid_dumpable: 0
+
+# squashfs is left enabled on purpose: Apptainer/Singularity containers need it.
+hardening_disabled_filesystems:
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfs
+  - hfsplus
+  - udf
+
+hardening_login_banner: |
+  Authorized use only. Activity on this system is logged and monitored.
+
+hardening_auto_security_updates: false

@@ -1,0 +1,18 @@
+---
+cluster_name: hpc-lab
+cluster_network: 192.168.60.0/24
+cluster_domain: hpc.lab
+
+cluster_users:
+  - name: hpcuser
+    uid: 2001
+    shell: /bin/bash
+
+slurm_accounts:
+  - name: research
+    description: Default research account
+    users:
+      - hpcuser
+
+# Secrets live in vault.yml (ansible-vault encrypted, never committed in clear text).
+slurm_db_password: "{{ vault_slurm_db_password }}"

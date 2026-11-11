@@ -1,0 +1,5 @@
+---
+- name: Re-export file systems
+  ansible.builtin.command:
+    cmd: exportfs -ra
+  changed_when: true

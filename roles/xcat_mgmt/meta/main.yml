@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: xcat_mgmt
+  author: Ahmed Darwish
+  description: "xCAT management node: repositories, site and network tables, OS image, node definitions and PXE"
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+dependencies: []

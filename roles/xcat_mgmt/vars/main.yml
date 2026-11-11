@@ -1,0 +1,5 @@
+---
+xcat_mgmt_osimage: "{{ xcat_mgmt_os_name }}-{{ xcat_mgmt_os_arch }}-install-{{ xcat_mgmt_os_profile }}"
+xcat_mgmt_env:
+  PATH: "/opt/xcat/bin:/opt/xcat/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
+  XCATROOT: /opt/xcat

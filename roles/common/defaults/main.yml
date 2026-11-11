@@ -1,0 +1,17 @@
+---
+common_packages:
+  - chrony
+  - firewalld
+  - policycoreutils-python-utils
+  - python3-libselinux
+  - rsync
+  - tar
+  - vim-enhanced
+  - bash-completion
+common_timezone: UTC
+common_selinux_state: enforcing
+common_set_hostname: true
+common_manage_hosts_file: true
+common_trusted_networks: "{{ [cluster_network] if cluster_network is defined else [] }}"
+common_users: "{{ cluster_users | default([]) }}"
+common_home_base: /shared/home

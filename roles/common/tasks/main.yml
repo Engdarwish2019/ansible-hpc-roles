@@ -1,0 +1,77 @@
+---
+- name: Set the hostname to the inventory name
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+  when: common_set_hostname
+
+- name: Add every cluster node to /etc/hosts
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED: cluster nodes"
+    block: |
+      {% for host in groups['all'] %}
+      {{ hostvars[host].ansible_host | default(hostvars[host].ansible_default_ipv4.address) }} {{ host }}
+      {% endfor %}
+  when: common_manage_hosts_file
+
+- name: Install EPEL
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+
+- name: Enable the CRB repository (needed by EPEL packages)
+  community.general.dnf_config_manager:
+    name: crb
+    state: enabled
+
+- name: Install base packages
+  ansible.builtin.dnf:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Set the timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+
+- name: Keep SELinux in the configured state
+  ansible.posix.selinux:
+    policy: targeted
+    state: "{{ common_selinux_state }}"
+
+- name: Enable chrony and firewalld
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - chronyd
+    - firewalld
+
+- name: Trust the cluster network in firewalld (Slurm, MUNGE, MPI, NFS)
+  ansible.posix.firewalld:
+    zone: trusted
+    source: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ common_trusted_networks }}"
+
+- name: Create cluster user groups with fixed GIDs
+  ansible.builtin.group:
+    name: "{{ item.name }}"
+    gid: "{{ item.uid }}"
+  loop: "{{ common_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Create cluster users with fixed UIDs (homes live on NFS)
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    uid: "{{ item.uid }}"
+    group: "{{ item.name }}"
+    home: "{{ common_home_base }}/{{ item.name }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: false
+  loop: "{{ common_users }}"
+  loop_control:
+    label: "{{ item.name }}"

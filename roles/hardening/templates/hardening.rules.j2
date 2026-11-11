@@ -1,0 +1,18 @@
+## {{ ansible_managed }}
+## Identity changes
+-w /etc/passwd -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+## Privilege escalation
+-w /etc/sudoers -p wa -k scope
+-w /etc/sudoers.d/ -p wa -k scope
+## SSH configuration
+-w /etc/ssh/sshd_config -p wa -k sshd
+-w /etc/ssh/sshd_config.d/ -p wa -k sshd
+## Cluster authentication and scheduler configuration
+-w /etc/munge/ -p wa -k munge
+-w /etc/slurm/ -p wa -k slurm
+## Kernel modules
+-w /sbin/insmod -p x -k modules
+-w /sbin/modprobe -p x -k modules

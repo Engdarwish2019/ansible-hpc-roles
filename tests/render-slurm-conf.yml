@@ -1,0 +1,45 @@
+---
+- name: Render the Slurm templates against a sample inventory
+  hosts: head
+  gather_facts: false
+  vars_files:
+    - ../roles/slurm/defaults/main.yml
+  vars:
+    slurm_test_dir: "{{ playbook_dir }}/.rendered"
+  tasks:
+    - name: Create the output directory
+      ansible.builtin.file:
+        path: "{{ slurm_test_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Render templates
+      ansible.builtin.template:
+        src: ../roles/slurm/templates/{{ item }}.j2
+        dest: "{{ slurm_test_dir }}/{{ item }}"
+        mode: "0644"
+      loop:
+        - slurm.conf
+        - gres.conf
+
+    - name: Check the rendered slurm.conf
+      ansible.builtin.assert:
+        that:
+          - "'ClusterName=ci-cluster' in slurm_conf"
+          - "'SlurmctldParameters=enable_configless' in slurm_conf"
+          - "'NodeName=compute-01 NodeAddr=10.0.0.11 Sockets=2 CoresPerSocket=16 ThreadsPerCore=2 RealMemory=231300 State=UNKNOWN' in slurm_conf"
+          - "'Gres=gpu:4' in slurm_conf"
+          - "'PartitionName=compute Nodes=compute-01 Default=YES' in slurm_conf"
+          - "'PartitionName=gpu Nodes=gpu-01 Default=NO' in slurm_conf"
+          - "'GresTypes=gpu' in slurm_conf"
+        quiet: true
+      vars:
+        slurm_conf: "{{ lookup('ansible.builtin.file', slurm_test_dir ~ '/slurm.conf') }}"
+
+    - name: Check the rendered gres.conf
+      ansible.builtin.assert:
+        that:
+          - "'NodeName=gpu-01 Name=gpu File=/dev/nvidia[0-3]' in gres_conf"
+        quiet: true
+      vars:
+        gres_conf: "{{ lookup('ansible.builtin.file', slurm_test_dir ~ '/gres.conf') }}"

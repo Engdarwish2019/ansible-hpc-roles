@@ -1,0 +1,48 @@
+---
+- name: Install NFS server packages
+  ansible.builtin.dnf:
+    name: nfs-utils
+    state: present
+
+- name: Create exported directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ nfs_server_exports }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Create home directories for cluster users
+  ansible.builtin.file:
+    path: "{{ nfs_server_home_base }}/{{ item.name }}"
+    state: directory
+    owner: "{{ item.name }}"
+    group: "{{ item.name }}"
+    mode: "0700"
+  loop: "{{ nfs_server_home_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Export the shared directories to the cluster network only
+  ansible.builtin.template:
+    src: hpc.exports.j2
+    dest: /etc/exports.d/hpc.exports
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Re-export file systems
+
+- name: Enable the NFS server
+  ansible.builtin.systemd_service:
+    name: nfs-server
+    state: started
+    enabled: true
+
+- name: Allow NFS home directories under SELinux
+  ansible.posix.seboolean:
+    name: use_nfs_home_dirs
+    state: true
+    persistent: true

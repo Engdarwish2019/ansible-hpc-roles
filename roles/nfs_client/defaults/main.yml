@@ -1,0 +1,9 @@
+---
+nfs_client_server: "{{ groups['nfs_server'][0] }}"
+nfs_client_mounts:
+  - path: /shared/home
+    src: /shared/home
+    opts: rw,hard,nfsvers=4.2,_netdev
+  - path: /shared/apps
+    src: /shared/apps
+    opts: ro,hard,nfsvers=4.2,_netdev

@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: lmod
+  author: Ahmed Darwish
+  description: "Lmod environment modules with a shared modulefiles tree"
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+dependencies: []

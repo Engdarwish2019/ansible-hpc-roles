@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  role_name: common
+  author: Ahmed Darwish
+  description: "Base packages, hostname, /etc/hosts, SELinux, firewalld trusted cluster network and cluster users"
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+dependencies: []

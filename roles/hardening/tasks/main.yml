@@ -1,0 +1,89 @@
+---
+- name: Show a login banner
+  ansible.builtin.copy:
+    content: "{{ hardening_login_banner }}"
+    dest: "{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - /etc/issue
+    - /etc/issue.net
+
+- name: Harden sshd with a drop-in file
+  ansible.builtin.template:
+    src: sshd-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-hardening.conf
+    owner: root
+    group: root
+    mode: "0600"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart sshd
+
+- name: Apply kernel and network sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/60-hardening.conf
+    state: present
+    reload: true
+  loop: "{{ hardening_sysctl | dict2items }}"
+
+- name: Disable unused filesystem kernel modules
+  ansible.builtin.copy:
+    dest: /etc/modprobe.d/hardening-filesystems.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {% for fs in hardening_disabled_filesystems %}
+      install {{ fs }} /bin/false
+      blacklist {{ fs }}
+      {% endfor %}
+
+- name: Install auditd
+  ansible.builtin.dnf:
+    name: audit
+    state: present
+
+- name: Deploy audit rules for identity, sudo and Slurm configuration changes
+  ansible.builtin.template:
+    src: hardening.rules.j2
+    dest: /etc/audit/rules.d/50-hardening.rules
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Load audit rules
+
+- name: Enable auditd
+  ansible.builtin.systemd_service:
+    name: auditd
+    state: started
+    enabled: true
+
+- name: Install and enable automatic security updates
+  when: hardening_auto_security_updates
+  block:
+    - name: Install dnf-automatic
+      ansible.builtin.dnf:
+        name: dnf-automatic
+        state: present
+
+    - name: Apply only security updates
+      community.general.ini_file:
+        path: /etc/dnf/automatic.conf
+        section: commands
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+        mode: "0644"
+      loop:
+        - option: upgrade_type
+          value: security
+        - option: apply_updates
+          value: "yes"
+
+    - name: Enable the dnf-automatic timer
+      ansible.builtin.systemd_service:
+        name: dnf-automatic.timer
+        state: started
+        enabled: true

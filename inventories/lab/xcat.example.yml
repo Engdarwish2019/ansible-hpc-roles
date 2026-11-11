@@ -1,0 +1,17 @@
+---
+# Example inventory for playbooks/xcat.yml (bare-metal provisioning lab).
+all:
+  children:
+    xcat_mgmt:
+      hosts:
+        xcatmn:
+          ansible_host: 192.168.122.10
+          xcat_mgmt_cluster_interface: eth1
+          xcat_mgmt_ip: 10.0.200.1
+          xcat_mgmt_nodes:
+            - name: compute01
+              mac: "52:54:00:aa:bb:01"
+              ip: 10.0.200.11
+            - name: compute02
+              mac: "52:54:00:aa:bb:02"
+              ip: 10.0.200.12
